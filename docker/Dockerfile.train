@@ -1,0 +1,8 @@
+# Placeholder Dockerfile for training image
+FROM python:3.11-slim
+
+WORKDIR /app
+COPY training/ ./training/
+RUN pip install --no-cache-dir -r training/requirements.txt || true
+
+CMD ["python", "training/train_sft.py", "--config", "training/configs/qwen2p5_0_5b_qlora.yaml"]

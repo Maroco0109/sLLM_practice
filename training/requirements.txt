@@ -1,0 +1,8 @@
+transformers
+trl
+peft
+datasets
+accelerate
+bitsandbytes
+torch
+PyYAML

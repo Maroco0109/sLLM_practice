@@ -1,0 +1,85 @@
+# OS artifacts
+.DS_Store
+Thumbs.db
+
+# Editors/IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# Python build and caches
+__pycache__/
+*.py[cod]
+*.so
+*.pyd
+.venv/
+venv/
+env/
+ENV/
+pip-wheel-metadata/
+*.egg-info/
+dist/
+build/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Node / Frontend
+node_modules/
+.next/
+frontend/node_modules/
+frontend/.next/
+frontend/.turbo/
+frontend/.eslintcache
+frontend/coverage/
+frontend/.vercel/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Data & outputs (keep placeholders)
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+outputs/
+checkpoints/
+runs/
+wandb/
+
+# Model weights & large artifacts
+*.bin
+*.safetensors
+*.h5
+*.pt
+*.pth
+*.ckpt
+*.onnx
+
+# Docker
+docker-compose.override.yml
+
+# Hugging Face / misc caches inside repo
+huggingface/
+hf_cache/
+cache/
+
+# Logs
+logs/
+*.log
+

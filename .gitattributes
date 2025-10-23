@@ -1,0 +1,17 @@
+# Normalize line endings and avoid spurious diffs
+* text=auto
+
+# Treat large model artifacts as binary (skip diffs)
+*.bin -diff
+*.safetensors -diff
+*.pt -diff
+*.pth -diff
+*.ckpt -diff
+*.onnx -diff
+
+# Common archives
+*.zip -diff
+*.tar -diff
+*.tar.gz -diff
+*.bz2 -diff
+

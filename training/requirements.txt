@@ -6,3 +6,4 @@ accelerate
 bitsandbytes
 torch
 PyYAML
+wikiextractor

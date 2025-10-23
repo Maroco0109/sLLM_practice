@@ -5,7 +5,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "next test"
+    "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "next": "latest",
@@ -13,6 +15,12 @@
     "react-dom": "latest"
   },
   "devDependencies": {
-    "typescript": "latest"
+    "typescript": "latest",
+    "vitest": "latest",
+    "@testing-library/react": "latest",
+    "@testing-library/jest-dom": "latest",
+    "@testing-library/user-event": "latest",
+    "jsdom": "latest",
+    "@types/jsdom": "latest"
   }
 }

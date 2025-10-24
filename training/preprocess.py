@@ -16,6 +16,13 @@ Notes:
       internal, non‑stable APIs.
 """
 
+# KO: 위키데이터 전처리 유틸리티입니다. README 4.3을 구현하여, 다운로드한
+# Wikipedia XML 덤프에 대해 WikiExtractor를 실행하고 정제된 JSON/텍스트 샤드를
+# 생성합니다. 주요 인자: --input, --output, --processes, --no-json, --overwrite
+# 예시:
+#   python training/preprocess.py --input data/raw/kowiki-YYYYMMDD-pages-articles.xml.bz2 \
+#     --output data/processed/kowiki_json --processes 8
+
 from __future__ import annotations
 
 import argparse

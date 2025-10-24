@@ -1,4 +1,11 @@
-"""Quick evaluation script placeholder as referenced in README."""
+"""Quick evaluation script placeholder as referenced in README.
+
+KO: README에서 언급된 빠른 평가 스크립트의 자리표시자입니다.
+- 입력 인자: `--model` (모델/체크포인트 경로), `--prompts` (프롬프트 JSONL 경로)
+- 현재 동작: 경로를 출력하여 실행 경로를 확인합니다.
+- 추후 계획: Transformers 또는 서빙된 엔드포인트를 통해 응답을 생성하고,
+  기본적인 지표(응답 길이, 성공률 등)를 로깅하도록 확장합니다.
+"""
 
 from __future__ import annotations
 

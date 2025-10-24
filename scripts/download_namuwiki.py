@@ -1,7 +1,12 @@
 """Download NamuWiki dataset in chunks and report size.
 
-By default, only inspects size and downloads a limited number of records
-to demonstrate chunked writes. Increase --max-records to fetch more.
+KO: 나무위키 데이터셋을 스트리밍으로 내려받아 JSONL 샤드 단위로 저장하고,
+추정 전체 용량을 출력합니다. 기본 동작은 용량만 확인하며, `--max-records`를
+증가시키면 실제로 레코드를 내려받아 샤드 파일을 생성합니다.
+
+기본 동작:
+- 용량 확인(메타데이터 기반 추정).
+- `--max-records > 0`인 경우, `--shard-size`마다 새 JSONL 파일로 롤링하여 기록.
 """
 
 from __future__ import annotations

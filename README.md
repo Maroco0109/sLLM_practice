@@ -132,7 +132,7 @@ PY
 pip install wikiextractor
 
 # 위키백과 XML → 평문 JSON/텍스트
-python -m wikiextractor.WikiExtractor \
+python -m wikiextractor \
   --json \
   --processes 8 \
   --output data/processed/kowiki_json \
@@ -361,3 +361,16 @@ trainer.train()
 [14]: https://en.wikipedia.org/wiki/Wikipedia%3ADatabase_download?utm_source=chatgpt.com "Wikipedia:Database download"
 [15]: https://huggingface.co/Qwen/Qwen2.5-7B-Instruct?utm_source=chatgpt.com "Qwen/Qwen2.5-7B-Instruct"
 [16]: https://docs.runpod.io/serverless/load-balancing/vllm-worker?utm_source=chatgpt.com "Build a load balancing vLLM endpoint"
+
+## Windows PowerShell Commands
+
+PowerShell에서는 Bash의 `\` 줄바꿈 이어쓰기가 동작하지 않습니다. 아래와 같이 한 줄 명령으로 실행하세요.
+
+- 전처리(WikiExtractor JSON):
+  - `python training/preprocess.py --input "data/raw/kowiki-YYYYMMDD-pages-articles.xml.bz2" --output "data/processed/kowiki_json" --processes 8`
+- SFT JSONL 빌드(instruct 스키마):
+  - `python training/build_sft.py --sources "data/processed/kowiki_json" --out "data/processed/sft_train.jsonl" --schema instruct`
+- 나무위키 Parquet 사용 시:
+  - `python training/build_sft.py --sources "data/processed/kowiki_json" --namu_parquet "data/raw/namuwiki.parquet" --out "data/processed/sft_train.jsonl" --schema instruct`
+- 나무위키 스트리밍 샤드 사용 시:
+  - `python training/build_sft.py --namu_stream_dir "data/raw/namuwiki_stream" --out "data/processed/sft_train.jsonl" --schema instruct`

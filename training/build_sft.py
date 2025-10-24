@@ -57,9 +57,20 @@ def _read_jsonl(path: Path) -> Generator[dict, None, None]:
 
 
 def iter_wikiextractor_dir(root: Path) -> Iterable[Article]:
-    exts = {".json", ".jsonl"}
+    """Yield Article items from a WikiExtractor output directory.
+
+    Notes (Windows/PowerShell, WikiExtractor variations):
+    - 일부 WikiExtractor 버전은 `--json` 출력 파일에 확장자를 붙이지 않거나
+      `wiki_00` 형태로 생성합니다. 이 경우 기존 확장자 필터링만으로는 누락될 수
+      있으므로 파일명이 `wiki_`로 시작하면 확장자에 상관없이 처리합니다.
+    - 기본 전제는 JSONL 라인별 레코드(`{"title":..., "text":...}`)입니다.
+    """
+    exts = {".json", ".jsonl", ".txt"}
     for p in root.rglob("*"):
-        if p.is_file() and p.suffix.lower() in exts:
+        if not p.is_file():
+            continue
+        name = p.name.lower()
+        if (p.suffix.lower() in exts) or name.startswith("wiki_"):
             for rec in _read_jsonl(p):
                 title = (rec.get("title") or "").strip()
                 text = (rec.get("text") or "").strip()

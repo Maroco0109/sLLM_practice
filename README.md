@@ -107,6 +107,15 @@ mkdir -p data/raw && cd data/raw
 wget https://dumps.wikimedia.org/kowiki/20251020/kowiki-20251020-pages-articles.xml.bz2
 ```
 
+PowerShell (Windows, recommended on this repo):
+
+```powershell
+# Auto-detect latest date, show size, and resume if interrupted
+pwsh -NoLogo -File scripts/download_kowiki.ps1 -Project kowiki -OutDir data/raw
+# Or run via PowerShell in the repo root
+# .\scripts\download_kowiki.ps1 -Project kowiki -OutDir data\raw
+```
+
 * Wikimedia는 정기적으로 각 언어 위키 덤프를 제공합니다. ([Wikimedia Downloads][2])
 
 #### (B) 나무위키

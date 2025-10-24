@@ -102,9 +102,9 @@ pip install -r training/requirements.txt
 
 ```bash
 # 최신 kowiki 덤프 경로 확인
-# https://dumps.wikimedia.org/kowiki/  에서 YYYYMMDD 선택
+# https://dumps.wikimedia.org/kowiki/  에서 YYYYMMDD 선택 → 2025.10.24 기준 20251020 사용
 mkdir -p data/raw && cd data/raw
-wget https://dumps.wikimedia.org/kowiki/2025xxxx/kowiki-2025xxxx-pages-articles.xml.bz2
+wget https://dumps.wikimedia.org/kowiki/20251020/kowiki-20251020-pages-articles.xml.bz2
 ```
 
 * Wikimedia는 정기적으로 각 언어 위키 덤프를 제공합니다. ([Wikimedia Downloads][2])

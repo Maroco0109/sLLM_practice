@@ -123,16 +123,30 @@ pwsh -NoLogo -File scripts/download_kowiki.ps1 -Project kowiki -OutDir data/raw
 * 예시: Hugging Face에 커뮤니티가 업로드한 나무위키 추출본을 사용할 수 있으나 **CC BY-NC-SA 2.0 (비영리)** 입니다. 상업/배포 조건을 반드시 확인하세요.
   (예: `heegyu/namuwiki-extracted` 등) ([Hugging Face][3])
 
+**빠른 단계별 가이드**
+
+1. `mkdir -p data/raw` (폴더가 없다면 생성)
+2. `pip install datasets` (처음 한 번)
+3. 아래 스크립트를 실행해 `data/raw` 아래로 캐시
+
 ```bash
-# 예시 - datasets 라이브러리로 로컬 캐시 다운로드
+# 예시 - datasets 라이브러리로 로컬 캐시 다운로드 (data/raw)
 python - << 'PY'
 from datasets import load_dataset
-ds = load_dataset("heegyu/namuwiki-extracted")
-print(ds, ds['train'][0])
+ds = load_dataset("heegyu/namuwiki-extracted", cache_dir="data/raw")
+print(ds)
 PY
 ```
 
+> 로우 파일을 한 폴더에 보관하려면 `ds.save_to_disk("data/raw/namuwiki")` 같은 후처리를 추가하세요.
+
 > 💡 Kaggle/GitHub에도 파생 데이터가 있으나, **원본 라이선스/출처/사용조건을 재확인** 하세요. ([Kaggle][10])
+
+> 실행 명령(`python`) – 스트리밍/샤드 다운로드
+>
+> ```python
+> python scripts/download_namuwiki.py --repo heegyu/namuwiki-extracted --out data/raw/namuwiki_stream --max-records 0
+> ```
 
 ### 4.3 전처리 (WikiExtractor)
 
@@ -141,31 +155,98 @@ PY
 pip install wikiextractor
 
 # 위키백과 XML → 평문 JSON/텍스트
-python -m wikiextractor \
+wikiextractor \
   --json \
   --processes 8 \
   --output data/processed/kowiki_json \
   data/raw/kowiki-2025xxxx-pages-articles.xml.bz2
+
+# Python 3.11에서 `re.error: global flags not at the start...` 오류가 나면
+#  - `pip install --force-reinstall wikiextractor==3.0.0` 으로 다운그레이드하거나
+#  - 위 오류가 발생한 `.../site-packages/wikiextractor/extract.py` 파일에서
+#    `re.compile('[(?i)...` 형태의 인라인 플래그를 제거하고 `re.IGNORECASE` 플래그를 추가하세요.
 ```
 
 * WikiExtractor는 위키 덤프에서 본문 텍스트를 추출/정제하는 표준 도구입니다. ([GitHub][8])
+* `python -m wikiextractor` 도 동일하게 동작하지만, 일부 환경에서 캐싱된 구버전은 `WikiExtractor` 모듈 경로를 직접 지정해야 합니다.
+
+> 실행 명령(`python`) – 래퍼 스크립트로 동일 작업 수행
+>
+> ```python
+> python training/preprocess.py --input data/raw/kowiki-20251020-pages-articles.xml.bz2 --output data/processed/kowiki_json --processes 8
+> ```
+
+> 💡 네트워크 차단/패키지 문제로 `wikiextractor` 설치가 안 되는 경우
+>
+> * `training/preprocess.py`는 자동으로 **내장(builtin) 파서**로 폴백합니다. (XML → `wiki_00.jsonl`)
+> * 직접 지정하고 싶다면 `--prefer-builtin` 플래그를 사용하세요.
+> * 장시간 실행 전에 스모크 테스트가 필요하면 `--max-pages 50000`으로 일부만 추출 가능합니다.
+> * 위키익스트랙터 구버전이 남긴 비어 있는 `data/processed/kowiki_extracted/AA/wiki_00` 같은 파일은 **버려도 됩니다**. 새 내장 파서는 `data/processed/kowiki_json/wiki_00.jsonl`만 사용합니다.
+> 
+> ```python
+> # builtin 파서 강제 + 5만 문서 샘플
+> python training/preprocess.py \
+>   --input data/raw/kowiki-20251020-pages-articles.xml.bz2 \
+>   --output data/processed/kowiki_json \
+>   --prefer-builtin \
+>   --max-pages 50000 \
+>   --overwrite
+> ```
 
 ### 4.4 SFT 데이터 빌드(지시형/QA 포맷)
 
-```bash
+4.3에서 뽑아둔 WikiExtractor 결과(`data/processed/kowiki_json/**/wiki_*`)나 공개된 전처리본(예: Kaggle/HF parquet, `scripts/download_namuwiki.py`가 만든 JSONL 샤드)을 하나의 SFT JSONL로 합치는 단계입니다. `training/build_sft.py`는 여러 preprocessed dataset을 동시에 받아 instruct/QA 스키마로 변환합니다.
+
+**주요 인자**
+
+* `--sources`: WikiExtractor 출력 디렉터리 목록 (여러 개 전달 가능, 예:`data/processed/kowiki_json data/processed/kowiki_extracted`)
+* `--namu_parquet`: 나무위키 parquet 파일 경로(캐시나 사전 전처리본)
+* `--namu_stream_dir`: `scripts/download_namuwiki.py`로 저장한 JSONL 샤드 폴더
+* `--schema`: `instruct`(기본) 또는 `qa`
+* `--max-records`: 빠른 검증용으로 일부만 추출 (0=전체)
+
+**전체 데이터 병합 (전처리본 + parquet)**
+
+```python
 python training/build_sft.py \
   --sources data/processed/kowiki_json \
   --namu_parquet data/raw/namuwiki.parquet \
   --out data/processed/sft_train.jsonl \
-  --schema instruct  # instruct | qa
+  --schema instruct
 ```
+
+**전처리본만 빠르게 샘플링(2만 레코드)**
+
+```python
+python training/build_sft.py \
+  --sources data/processed/kowiki_json \
+  --out data/processed/sft_sample.jsonl \
+  --schema instruct \
+  --max-records 20000
+```
+
+```bash
+head -n 2 data/processed/sft_sample.jsonl | jq
+```
+
+**나무위키 스트리밍 샤드(qa 스키마)**
+
+```python
+python training/build_sft.py \
+  --namu_stream_dir data/raw/namuwiki_stream \
+  --out data/processed/sft_namu_qa.jsonl \
+  --schema qa
+```
+
+`wc -l data/processed/sft_train.jsonl`로 레코드 수를 확인한 뒤 `training/configs/*.yaml`의 `data.train_file`을 원하는 파일로 지정하면 됩니다.
 
 * 스키마 예시(instruct):
 
 ```json
 {"messages": [{"role":"system","content":"너는 한국어 도우미야."},
               {"role":"user","content":"달걀 삶는 법 알려줘."}],
- "response": "끓는 물에 9~12분..."}
+ "response": "끓는 물에 9~12분...",
+ "meta": {"source":"kowiki","title":"달걀"}}
 ```
 
 ---
@@ -202,7 +283,7 @@ training:
 
 ### 5.2 실행
 
-```bash
+```python
 python training/train_sft.py --config training/configs/qwen2p5_0_5b_qlora.yaml
 ```
 
@@ -211,7 +292,7 @@ python training/train_sft.py --config training/configs/qwen2p5_0_5b_qlora.yaml
 
 ### 5.3 (선택) LoRA 병합
 
-```bash
+```python
 python training/merge_lora.py \
   --base Qwen/Qwen2.5-0.5B \
   --lora outputs/qwen2p5_0_5b_qlora \
@@ -222,7 +303,7 @@ python training/merge_lora.py \
 
 ## 6) 검증 & 스팟체크
 
-```bash
+```python
 python backend/eval/quick_eval.py \
   --model outputs/qwen2p5_0_5b_qlora \
   --prompts samples/ko_eval_prompts.jsonl
@@ -375,11 +456,11 @@ trainer.train()
 
 PowerShell에서는 Bash의 `\` 줄바꿈 이어쓰기가 동작하지 않습니다. 아래와 같이 한 줄 명령으로 실행하세요.
 
-- 전처리(WikiExtractor JSON):
-  - `python training/preprocess.py --input "data/raw/kowiki-YYYYMMDD-pages-articles.xml.bz2" --output "data/processed/kowiki_json" --processes 8`
-- SFT JSONL 빌드(instruct 스키마):
-  - `python training/build_sft.py --sources "data/processed/kowiki_json" --out "data/processed/sft_train.jsonl" --schema instruct`
-- 나무위키 Parquet 사용 시:
-  - `python training/build_sft.py --sources "data/processed/kowiki_json" --namu_parquet "data/raw/namuwiki.parquet" --out "data/processed/sft_train.jsonl" --schema instruct`
-- 나무위키 스트리밍 샤드 사용 시:
-  - `python training/build_sft.py --namu_stream_dir "data/raw/namuwiki_stream" --out "data/processed/sft_train.jsonl" --schema instruct`
+* 전처리(WikiExtractor JSON):
+  * `python training/preprocess.py --input "data/raw/kowiki-YYYYMMDD-pages-articles.xml.bz2" --output "data/processed/kowiki_json" --processes 8`
+* SFT JSONL 빌드(instruct 스키마):
+  * `python training/build_sft.py --sources "data/processed/kowiki_json" --out "data/processed/sft_train.jsonl" --schema instruct`
+* 나무위키 Parquet 사용 시:
+  * `python training/build_sft.py --sources "data/processed/kowiki_json" --namu_parquet "data/raw/namuwiki.parquet" --out "data/processed/sft_train.jsonl" --schema instruct`
+* 나무위키 스트리밍 샤드 사용 시:
+  * `python training/build_sft.py --namu_stream_dir "data/raw/namuwiki_stream" --out "data/processed/sft_train.jsonl" --schema instruct`
